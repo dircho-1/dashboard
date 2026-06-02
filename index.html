@@ -285,9 +285,6 @@ tbody td:last-child{padding-right:24px;}
 
 <!-- ── TAB 0: 진도 현황 ── -->
 <section class="tab-panel active" id="panel-0">
-  <div class="notice notice-info">
-    <span>📌</span><span>미리보기 데이터입니다. 6월 정식 오픈 시 실제 데이터로 업데이트됩니다.</span>
-  </div>
   <div class="table-wrap">
     <table>
       <thead><tr>
@@ -295,7 +292,7 @@ tbody td:last-child{padding-right:24px;}
         <th style="min-width:100px">이름</th>
         <th style="min-width:180px">목표 &amp; 진도</th>
         <th>달성율</th>
-        <th>시상 적용</th>
+        <th>비고</th>
       </tr></thead>
       <tbody id="t-progress"></tbody>
     </table>
@@ -308,9 +305,6 @@ tbody td:last-child{padding-right:24px;}
 
 <!-- ── TAB 1: 활동 현황 ── -->
 <section class="tab-panel" id="panel-1">
-  <div class="notice notice-info">
-    <span>📌</span><span>미리보기 데이터입니다. 6월 정식 오픈 시 실제 데이터로 업데이트됩니다.</span>
-  </div>
   <div class="table-wrap">
     <table>
       <thead><tr>
@@ -332,9 +326,6 @@ tbody td:last-child{padding-right:24px;}
 
 <!-- ── TAB 2: 제공DB활동 ── -->
 <section class="tab-panel" id="panel-2">
-  <div class="notice notice-teal">
-    <span>🗂️</span><span>제공DB 활동 현황입니다. 미리보기 데이터입니다.</span>
-  </div>
   <div class="table-wrap">
     <table>
       <thead><tr>
@@ -355,9 +346,6 @@ tbody td:last-child{padding-right:24px;}
 
 <!-- ── TAB 3: 오케이플랜+인생의품격 ── -->
 <section class="tab-panel" id="panel-3">
-  <div class="notice notice-purple">
-    <span>🙌</span><span>오케이플랜 + 인생의품격 판매 현황입니다.</span>
-  </div>
   <div class="table-wrap">
     <table>
       <thead><tr>
@@ -488,7 +476,7 @@ const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-j7irdQ
 //  🔧 공지사항 시트 URL (시트2 CSV URL)
 //  파일 → 공유 → 웹에 게시 → '공지사항' 탭 → CSV
 // ══════════════════════════════════════════
-const NOTICE_CSV_URL = 'Yhttps://docs.google.com/spreadsheets/d/e/2PACX-1vT-j7irdQSuwF9CF_iQwkqJetOb0SOWGQA8DVt-VIV1-xwyGV2Tl5SdOwHLBt-79RJBOidxsABJoe1A/pub?output=csv';
+const NOTICE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-j7irdQSuwF9CF_iQwkqJetOb0SOWGQA8DVt-VIV1-xwyGV2Tl5SdOwHLBt-79RJBOidxsABJoe1A/pub?output=csv';
 // 예시: 'https://docs.google.com/spreadsheets/d/XXXXXXX/pub?output=csv'
 // ══════════════════════════════════════════
 
@@ -790,7 +778,6 @@ function renderProgress(){
       </td>
       <td>
         <div class="cell-name">
-          <div class="avatar" style="${isMe?'background:linear-gradient(135deg,var(--purple),var(--purple2));':''}">${m.name[0]}</div>
           <span style="font-weight:${isMe?'900':'600'};font-size:${isMe?'16px':'14px'};white-space:nowrap;${isMe?'color:#fff;':''}">${m.name}${isMe?' <span style="font-size:11px;color:var(--purple2);margin-left:4px;font-weight:700;">◀ 나</span>':''}</span>
         </div>
       </td>
@@ -828,7 +815,6 @@ function renderActivity(){
     tr.innerHTML=`
       <td>
         <div class="cell-name">
-          <div class="avatar" style="${isMe?'background:linear-gradient(135deg,var(--purple),var(--purple2));':''}">${m.name[0]}</div>
           <span style="font-weight:${isMe?'900':'600'};font-size:${isMe?'15px':'13px'}">${m.name}${isMe?' <span style="font-size:10px;color:var(--purple2)">◀ 나</span>':''}</span>
         </div>
       </td>
@@ -868,7 +854,6 @@ function renderDB(){
     tr.innerHTML=`
       <td>
         <div class="cell-name">
-          <div class="avatar" style="background:linear-gradient(135deg,var(--teal),var(--teal2))">${m.name[0]}</div>
           <span style="font-weight:${isMe?'900':'600'};font-size:${isMe?'15px':'13px'}">${m.name}${isMe?' <span style="font-size:10px;color:var(--purple2)">◀ 나</span>':''}</span>
         </div>
       </td>
@@ -898,7 +883,6 @@ function render품격(){
     tr.innerHTML=`
       <td>
         <div class="cell-name">
-          <div class="avatar" style="background:linear-gradient(135deg,var(--purple),var(--purple2))">${m.name[0]}</div>
           <span style="font-weight:${isMe?'900':'600'};font-size:${isMe?'15px':'13px'}">${m.name}${isMe?' <span style="font-size:10px;color:var(--purple2)">◀ 나</span>':''}</span>
         </div>
       </td>
@@ -932,8 +916,10 @@ window.switchTab = (idx)=>{
 
 // ── 헬퍼
 function getAward(r){
-  if(r>=100)return{label:'시상1 적용',cls:'award-1',icon:'🏆'};
-  if(r>=80) return{label:'시상2 적용',cls:'award-2',icon:'🥈'};
+  if(r>=200)return{label:'곱배기 달성',cls:'award-1',icon:'🎉'};
+  if(r>=150)return{label:'150% 달성', cls:'award-1',icon:'💎'};
+  if(r>=120)return{label:'120% 달성', cls:'award-2',icon:'⭐'};
+  if(r>=100)return{label:'기준 달성',  cls:'award-2',icon:'✅'};
   return null;
 }
 function rateClass(r){return r>=100?'rate-high':r>=70?'rate-mid':'rate-low';}
@@ -950,7 +936,7 @@ loadFromSheet();
 // ══════════════════════════════════════════
 //  🔑 관리자 코드 (원하는 값으로 변경하세요)
 // ══════════════════════════════════════════
-const ADMIN_CODE = 'youho72!';
+const ADMIN_CODE = 'youho72';
 
 let currentSession = null;
 
