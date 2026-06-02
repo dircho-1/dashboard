@@ -492,11 +492,9 @@ const NOTICE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-j7ird
 // 예시: 'https://docs.google.com/spreadsheets/d/XXXXXXX/pub?output=csv'
 // ══════════════════════════════════════════
 
-// ── 금액 표시 헬퍼 (원 단위 입력 → 만원 단위 표시)
+// ── 금액 표시 헬퍼 (원 단위 그대로 표시)
 function wonFmt(n){
   if(!n || n===0) return '—';
-  if(n >= 100000000) return (n/100000000).toLocaleString(undefined,{maximumFractionDigits:1})+'억원';
-  if(n >= 10000)     return Math.round(n/10000).toLocaleString()+'만원';
   return n.toLocaleString()+'원';
 }
 
