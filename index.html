@@ -216,11 +216,11 @@ tbody td:last-child{padding-right:24px;}
     </div>
     <div class="stat-chip stat-clickable" onclick="openModal('award1')">
       <div class="num" id="stat-a1">—</div>
-      <div class="lbl">시상1 ↗</div>
+      <div class="lbl">기준달성 ↗</div>
     </div>
     <div class="stat-chip stat-clickable" onclick="openModal('award2')">
       <div class="num" id="stat-a2">—</div>
-      <div class="lbl">시상2 ↗</div>
+      <div class="lbl">곱빼기달성 ↗</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px;display:flex;align-items:center;gap:8px;">
       <span id="header-name" style="font-weight:600;">—</span>
@@ -638,7 +638,7 @@ function updateStats(){
   document.getElementById('stat-total').textContent = DATA.length+'명';
   document.getElementById('stat-avg').textContent   = avg+'%';
   document.getElementById('stat-a1').textContent    = rates.filter(r=>r>=100).length+'명';
-  document.getElementById('stat-a2').textContent    = rates.filter(r=>r>=80&&r<100).length+'명';
+  document.getElementById('stat-a2').textContent    = rates.filter(r=>r>=200).length+'명';
 }
 
 // ── 모달
@@ -714,15 +714,15 @@ window.openModal = (type) => {
 
   } else if(type === 'award1'){
     const members = rates.filter(r=>r.rate>=100);
-    title.textContent = '🏆 시상1 대상 인원';
+    title.textContent = '✅ 기준달성 인원';
     sub.textContent   = `달성율 100% 이상 · ${members.length}명`;
-    renderAwardList(body, members, '#f59e0b');
+    renderAwardList(body, members, '#10b981');
 
   } else if(type === 'award2'){
-    const members = rates.filter(r=>r.rate>=80&&r.rate<100);
-    title.textContent = '🥈 시상2 대상 인원';
-    sub.textContent   = `달성율 80% 이상 100% 미만 · ${members.length}명`;
-    renderAwardList(body, members, '#94a3b8');
+    const members = rates.filter(r=>r.rate>=200);
+    title.textContent = '🎉 곱빼기달성 인원';
+    sub.textContent   = `달성율 200% 이상 · ${members.length}명`;
+    renderAwardList(body, members, '#f59e0b');
   }
 
   document.getElementById('modal-backdrop').style.display='block';
@@ -916,7 +916,7 @@ window.switchTab = (idx)=>{
 
 // ── 헬퍼
 function getAward(r){
-  if(r>=200)return{label:'곱배기 달성',cls:'award-1',icon:'🎉'};
+  if(r>=200)return{label:'곱빼기 달성',cls:'award-1',icon:'🎉'};
   if(r>=150)return{label:'150% 달성', cls:'award-1',icon:'💎'};
   if(r>=120)return{label:'120% 달성', cls:'award-2',icon:'⭐'};
   if(r>=100)return{label:'기준 달성',  cls:'award-2',icon:'✅'};
@@ -936,7 +936,7 @@ loadFromSheet();
 // ══════════════════════════════════════════
 //  🔑 관리자 코드 (원하는 값으로 변경하세요)
 // ══════════════════════════════════════════
-const ADMIN_CODE = 'youho72';
+const ADMIN_CODE = 'yy';
 
 let currentSession = null;
 
