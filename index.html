@@ -374,11 +374,11 @@ function launchConfetti(dur){
 
 // ── SAMPLE DATA
 const SAMPLE_DATA=[
-  {name:'김하나',branch:'강남지점',code:'A-2301',month:'1차월',target:10000000,actual:9200000, newLms:18,actHappy:8, design:28,issued:22,okCount:3,okAmount:4500000,품격Count:2,품격Amount:3200000,dbProvide:45,dbLms:82.2,happyAnalysis:12,dbDesign:8},
-  {name:'김둘',  branch:'강남지점',code:'A-2302',month:'1차월',target:10000000,actual:7500000, newLms:12,actHappy:5, design:20,issued:14,okCount:1,okAmount:1200000,품격Count:0,품격Amount:0,      dbProvide:30,dbLms:66.7,happyAnalysis:7, dbDesign:4},
-  {name:'김셋',  branch:'서초지점',code:'A-2303',month:'1차월',target:10000000,actual:11000000,newLms:24,actHappy:14,design:35,issued:31,okCount:5,okAmount:8900000,품격Count:3,품격Amount:5100000,dbProvide:60,dbLms:91.7,happyAnalysis:20,dbDesign:15},
-  {name:'이넷',  branch:'서초지점',code:'A-2304',month:'1차월',target:10000000,actual:5500000, newLms:6, actHappy:2, design:15,issued:9, okCount:0,okAmount:0,      품격Count:1,품격Amount:1500000,dbProvide:20,dbLms:55.0,happyAnalysis:3, dbDesign:2},
-  {name:'박다섯',branch:'송파지점',code:'A-2305',month:'1차월',target:10000000,actual:8800000, newLms:15,actHappy:7, design:24,issued:20,okCount:0,okAmount:0,      품격Count:0,품격Amount:0,      dbProvide:38,dbLms:76.3,happyAnalysis:10,dbDesign:7},
+  {name:'김하나',branch:'강남지점',code:'A-2301',month:'1차월',target:10000000,actual:9200000, yesterday:8500000,newLms:18,actHappy:8, design:28,issued:22,okCount:3,okAmount:4500000,품격Count:2,품격Amount:3200000,dbProvide:45,dbLms:82.2,happyAnalysis:12,dbDesign:8},
+  {name:'김둘',  branch:'강남지점',code:'A-2302',month:'1차월',target:10000000,actual:7500000, yesterday:7500000,newLms:12,actHappy:5, design:20,issued:14,okCount:1,okAmount:1200000,품격Count:0,품격Amount:0,      dbProvide:30,dbLms:66.7,happyAnalysis:7, dbDesign:4},
+  {name:'김셋',  branch:'서초지점',code:'A-2303',month:'1차월',target:10000000,actual:11000000,yesterday:9800000,newLms:24,actHappy:14,design:35,issued:31,okCount:5,okAmount:8900000,품격Count:3,품격Amount:5100000,dbProvide:60,dbLms:91.7,happyAnalysis:20,dbDesign:15},
+  {name:'이넷',  branch:'서초지점',code:'A-2304',month:'1차월',target:10000000,actual:5500000, yesterday:5500000,newLms:6, actHappy:2, design:15,issued:9, okCount:0,okAmount:0,      품격Count:1,품격Amount:1500000,dbProvide:20,dbLms:55.0,happyAnalysis:3, dbDesign:2},
+  {name:'박다섯',branch:'송파지점',code:'A-2305',month:'1차월',target:10000000,actual:8800000, yesterday:7200000,newLms:15,actHappy:7, design:24,issued:20,okCount:0,okAmount:0,      품격Count:0,품격Amount:0,      dbProvide:38,dbLms:76.3,happyAnalysis:10,dbDesign:7},
 ];
 
 // ── CSV 파싱
@@ -393,7 +393,8 @@ function parseCSV(text){
       okCount:+c[10], okAmount:+c[11],
       품격Count:+c[12], 품격Amount:+c[13],
       dbProvide:+c[14], dbLms:+c[15],
-      happyAnalysis:+c[16], dbDesign:+c[17]
+      happyAnalysis:+c[16], dbDesign:+c[17],
+      yesterday:+c[18]||0
     };
   }).filter(r=>r.name);
 }
@@ -519,9 +520,8 @@ function buildTabs(){
   const nav=document.getElementById('tab-nav');
   const panels=document.getElementById('main-panels');
   nav.innerHTML=''; panels.innerHTML='';
-  const tabs=[{l:'📊 진도 현황'},{l:'📋 활동 현황'},{l:'🗂️ 제공DB활동'},{l:'🙌 오케이플랜+인생의품격'},{l:'📢 공지사항'}];
-  if(currentSession.role==='admin')tabs.push({l:'⚙️ 관리자'});
-  tabs.forEach((t,i)=>{
+  const tabs=[{l:'📊 진도 현황'},{l:'📋 활동 현황'},{l:'🗂️ 제공DB활동'},{l:'🙌 오케이플랜+인생의품격'},{l:'📢 공지사항'},{l:'🌟 오늘의 실적'}];
+  if(currentSession.role==='admin')tabs.push({l:'⚙️ 관리자'});  tabs.forEach((t,i)=>{
     const btn=document.createElement('button');
     btn.className='tab-btn'+(i===0?' active':'');
     btn.textContent=t.l;
@@ -577,7 +577,8 @@ function renderAll(){
   const p2=document.getElementById('panel-2');if(p2)renderDB(p2);
   const p3=document.getElementById('panel-3');if(p3)render품격(p3);
   const p4=document.getElementById('panel-4');if(p4)renderNoticePanel(p4);
-  const p5=document.getElementById('panel-5');if(p5)renderAdmin(p5);
+  const p5=document.getElementById('panel-5');if(p5)renderToday(p5);
+  const p6=document.getElementById('panel-6');if(p6)renderAdmin(p6);
 }
 
 function updateStats(){
@@ -738,6 +739,67 @@ function render품격(panel){
   panel.querySelector('#ft-ok').textContent=DATA.length+'명 · 오케이 '+okC+'건 '+wonFmt(okA)+' · 품격 '+품C+'건 '+wonFmt(품A);
 }
 
+// ── 오늘의 실적
+function renderToday(panel){
+  const myCode=currentSession?.code;
+  const today=new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'});
+  // 어제 대비 증가한 사람만 필터 (실적이 어제보다 늘어난 경우)
+  const improved=DATA.filter(m=>(m.actual||0)>(m.yesterday||0))
+    .sort((a,b)=>(b.actual-b.yesterday)-(a.actual-a.yesterday));
+  const totalIncrease=improved.reduce((s,m)=>s+(m.actual-m.yesterday),0);
+
+  panel.innerHTML=`
+    <div style="padding:14px 16px 0;">
+      <div style="background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(6,182,212,.08));border:1px solid rgba(16,185,129,.25);border-radius:12px;padding:14px 18px;margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#10b981;margin-bottom:8px;">🌟 ${today} 오늘의 실적 현황</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;">
+          <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">실적 증가 인원</div>
+            <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:#10b981">${improved.length}<span style="font-size:12px;margin-left:3px;color:var(--muted)">명</span></div></div>
+          <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">오늘 총 증가 실적</div>
+            <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--accent2)">${wonFmt(totalIncrease)}</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>지점</th><th>이름</th>
+        <th>어제 실적</th><th>오늘 실적</th>
+        <th>증가액</th><th>달성율</th>
+      </tr></thead>
+      <tbody id="tb-today"></tbody>
+    </table></div>
+    <div class="table-footer">
+      <span id="ft-today">—</span>
+      <span style="font-family:'DM Mono',monospace;font-size:10px">MASTER COURSE 2026</span>
+    </div>`;
+
+  const tb=panel.querySelector('#tb-today');
+  if(!improved.length){
+    tb.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);font-size:13px;">오늘 실적 변동이 없습니다.</td></tr>`;
+  } else {
+    improved.forEach(m=>{
+      const diff=m.actual-(m.yesterday||0);
+      const r=getRate(m);
+      const isMe=currentSession?.role==='member'&&m.code===myCode;
+      const tr=document.createElement('tr');
+      if(isMe)tr.className='me-row';
+      tr.innerHTML=`
+        <td><span style="font-size:11px;color:var(--dim)">${m.branch}</span></td>
+        <td><span style="font-weight:${isMe?900:600};font-size:${isMe?'15px':'13px'}">${m.name}${isMe?' <span style="font-size:10px;color:var(--purple2)">◀ 나</span>':''}</span></td>
+        <td style="font-family:'DM Mono',monospace;color:var(--muted)">${wonFmt(m.yesterday||0)}</td>
+        <td style="font-family:'DM Mono',monospace;color:${rateColor(r)};font-weight:${isMe?700:400}">${wonFmt(m.actual)}</td>
+        <td>
+          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#10b981">
+            +${wonFmt(diff)}
+          </span>
+        </td>
+        <td><span class="rate-badge ${rateClass(r)}">${r}%</span></td>`;
+      tb.appendChild(tr);
+    });
+  }
+  panel.querySelector('#ft-today').textContent=`${improved.length}명 실적 증가 · 총 +${wonFmt(totalIncrease)}`;
+}
+
 // ── 공지사항
 function renderNoticePanel(panel){
   panel.innerHTML=`
@@ -763,7 +825,8 @@ function renderAdmin(panel){
         지점명(A), 이름(B), 코드(C), 차월(D), 기준목표(E), 실적진도(F),<br>
         신규LMS동의(G), 행복보장분석(H), 설계건수(I), 발행건수(J),<br>
         오케이판매건수(K), 오케이판매금액(L), 품격판매건수(M), 품격판매금액(N),<br>
-        제공건수(O), DB LMS동의(P), DB행복보장분석(Q), 가입설계건수(R)<br>
+        제공건수(O), DB LMS동의(P), DB행복보장분석(Q), 가입설계건수(R),<br>
+        <span style="color:var(--green)">어제실적(S) ← 매일 업무 시작 전 F열 값을 복사해서 붙여넣기</span><br>
         <span style="color:var(--muted)">※ 금액은 원 단위 숫자로 입력</span>
       </div>
     </div>
