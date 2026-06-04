@@ -218,7 +218,6 @@ td:last-child{padding-right:16px;}
     <h1>고객컨설팅 마스터 과정</h1>
   </div>
   <div class="header-right">
-    <div class="stat-chip"><div class="num" id="stat-total">—</div><div class="lbl">전체 인원</div></div>
     <div class="stat-chip stat-clickable" onclick="openModal('avg')"><div class="num" id="stat-avg">—</div><div class="lbl">평균 달성율 ↗</div></div>
     <div class="stat-chip stat-clickable" onclick="openModal('award1')"><div class="num" id="stat-a1">—</div><div class="lbl">기준달성 ↗</div></div>
     <div class="stat-chip stat-clickable" onclick="openModal('award2')"><div class="num" id="stat-a2">—</div><div class="lbl">곱빼기달성 ↗</div></div>
@@ -277,7 +276,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
 
 // ══════════════════════════════════════════
 const SHEET_CSV_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-j7irdQSuwF9CF_iQwkqJetOb0SOWGQA8DVt-VIV1-xwyGV2Tl5SdOwHLBt-79RJBOidxsABJoe1A/pub?output=csv';
-const NOTICE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-j7irdQSuwF9CF_iQwkqJetOb0SOWGQA8DVt-VIV1-xwyGV2Tl5SdOwHLBt-79RJBOidxsABJoe1A/pub?gid=1558845890&single=true&output=csv';
+const NOTICE_CSV_URL = 'Yhttps://docs.google.com/spreadsheets/d/e/2PACX-1vT-j7irdQSuwF9CF_iQwkqJetOb0SOWGQA8DVt-VIV1-xwyGV2Tl5SdOwHLBt-79RJBOidxsABJoe1A/pub?gid=1558845890&single=true&output=csv';
 const ADMIN_CODE     = 'yy';
 const firebaseConfig = {
   apiKey:"YOUR_API_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",
@@ -579,7 +578,6 @@ function renderAll(){
 function updateStats(){
   const rates=DATA.map(r=>getRate(r));
   const avg=rates.length?Math.round(rates.reduce((a,b)=>a+b,0)/rates.length):0;
-  document.getElementById('stat-total').textContent=DATA.length+'명';
   document.getElementById('stat-avg').textContent=avg+'%';
   document.getElementById('stat-a1').textContent=rates.filter(r=>r>=100).length+'명';
   document.getElementById('stat-a2').textContent=rates.filter(r=>r>=200).length+'명';
@@ -613,6 +611,22 @@ function renderProgress(panel){
       <td>${getBigo(r)}</td>`;
     tb.appendChild(tr);
   });
+  const totT=DATA.reduce((s,m)=>s+m.target,0);
+  const totA=DATA.reduce((s,m)=>s+m.actual,0);
+  const totR=Math.round(totA/totT*100);
+  const totColor=totR>=100?'#10b981':totR>=70?'#f59e0b':'#ef4444';
+  const tfoot=document.createElement('tfoot');
+  tfoot.innerHTML=`
+    <tr style="background:var(--surface2);border-top:2px solid var(--border);">
+      <td style="padding:11px 13px;font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.06em;" colspan="2">전체 합계</td>
+      <td style="padding:11px 13px;">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:3px">목표 ${wonFmt(totT)} → <span style="color:${totColor};font-size:13px;font-weight:700">${wonFmt(totA)}</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(totR,100)}%;background:${progressGrad(totR)}"></div></div>
+      </td>
+      <td style="padding:11px 13px;"><span class="rate-badge ${rateClass(totR)}" style="font-size:13px;padding:4px 12px">${totR}%</span></td>
+      <td style="padding:11px 13px;font-family:'DM Mono',monospace;font-size:11px;color:${totColor};font-weight:700">${DATA.length}명 합산</td>
+    </tr>`;
+  panel.querySelector('table').appendChild(tfoot);
   panel.querySelector('#ft-progress').textContent=DATA.length+'명';
 }
 
@@ -768,7 +782,22 @@ window.openModal=(type)=>{
     const totA=DATA.reduce((s,m)=>s+m.actual,0);
     const avg=Math.round(totA/totT*100);
     title.textContent='전체 달성 현황';
-    sub.textContent=`목표 합계 ${wonFmt(totT)} · 실적 합계 ${wonFmt(totA)} · 평균 ${avg}%`;
+    sub.textContent=`${DATA.length}명`;
+
+    // 전체 합계 카드 3개
+    const summary=document.createElement('div');
+    summary.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;';
+    [{label:'전체 목표',val:wonFmt(totT),color:'var(--dim)'},
+     {label:'총 실적', val:wonFmt(totA),color:'var(--accent2)'},
+     {label:'달성율',  val:avg+'%',     color:avg>=100?'#10b981':avg>=70?'#f59e0b':'#ef4444'},
+    ].forEach(item=>{
+      const c=document.createElement('div');
+      c.style.cssText='background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:14px;text-align:center;';
+      c.innerHTML=`<div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:700;letter-spacing:.06em">${item.label}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:${item.color}">${item.val}</div>`;
+      summary.appendChild(c);
+    });
+    body.appendChild(summary);
     const groups=[
       {label:'100% 미달',color:'var(--red)',   filter:r=>r.rate<100},
       {label:'100% 달성',color:'var(--green)', filter:r=>r.rate>=100&&r.rate<120},
