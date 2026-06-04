@@ -222,6 +222,7 @@ td:last-child{padding-right:16px;}
     <div class="stat-chip stat-clickable" onclick="openModal('award1')"><div class="num" id="stat-a1">—</div><div class="lbl">기준달성 ↗</div></div>
     <div class="stat-chip stat-clickable" onclick="openModal('award2')"><div class="num" id="stat-a2">—</div><div class="lbl">곱빼기달성 ↗</div></div>
     <div class="user-chip"><span id="header-name">—</span><span class="role" id="header-role">—</span></div>
+    <button onclick="loadFromSheet()" style="background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:7px 12px;font-family:'Noto Sans KR',sans-serif;font-size:11px;font-weight:600;color:#10b981;cursor:pointer;transition:.2s;" onmouseover="this.style.background='rgba(16,185,129,.25)'" onmouseout="this.style.background='rgba(16,185,129,.15)'">🔄 새로고침</button>
     <button class="btn-logout" onclick="doLogout()">로그아웃</button>
   </div>
 </header>
@@ -417,10 +418,13 @@ async function loadFromSheet(){
     DATA=parseCSV(await res.text());
     renderAll();
     const now=new Date().toLocaleTimeString('ko-KR');
-    if(st){st.textContent=`✅ ${DATA.length}명 · ${now}`;st.style.color='var(--green)';}
+    // renderAll 후 다시 찾아서 업데이트
+    const st2=document.getElementById('sheet-status');
+    if(st2){st2.textContent=`✅ ${DATA.length}명 · ${now}`;st2.style.color='var(--green)';}
   }catch(e){
     DATA=SAMPLE_DATA; renderAll();
-    if(st){st.textContent='❌ 불러오기 실패 — 샘플 표시';st.style.color='var(--red)';}
+    const st2=document.getElementById('sheet-status');
+    if(st2){st2.textContent='❌ 불러오기 실패 — 샘플 표시';st2.style.color='var(--red)';}
   }
 }
 
@@ -813,11 +817,14 @@ function renderNoticePanel(panel){
 
 // ── 관리자
 function renderAdmin(panel){
+  const now=new Date().toLocaleTimeString('ko-KR');
+  const statusText=DATA.length>0?`✅ ${DATA.length}명 · ${now}`:'⚠️ 데이터 없음';
+  const statusColor=DATA.length>0?'var(--green)':'var(--gold2)';
   panel.innerHTML=`
     <div class="admin-section">
       <h3>📊 구글 시트 연동 상태</h3>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-        <div id="sheet-status" style="font-size:13px;color:var(--dim)">확인 중...</div>
+        <div id="sheet-status" style="font-size:13px;color:${statusColor}">${statusText}</div>
       <button onclick="loadFromSheet()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;padding:9px 18px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">🔄 새로고침</button>
       </div>
       <div class="csv-guide" style="margin-top:14px">
