@@ -405,7 +405,8 @@ function parseNoticeCSV(text){
 // ── 데이터 로드
 async function loadFromSheet(){
   const st=document.getElementById('sheet-status');
-  if(SHEET_CSV_URL==='YOUR_SHEET_URL'){ DATA=SAMPLE_DATA; renderAll(); return; }
+  if(st){st.textContent='불러오는 중...';st.style.color='var(--dim)';}
+  if(SHEET_CSV_URL==='YOUR_SHEET_URL'){ DATA=SAMPLE_DATA; renderAll(); if(st){st.textContent='⚠️ 샘플 데이터 표시 중';st.style.color='var(--gold2)';} return; }
   try{
     const res=await fetch(SHEET_CSV_URL);
     DATA=parseCSV(await res.text());
@@ -736,7 +737,7 @@ function renderAdmin(panel){
       <h3>📊 구글 시트 연동 상태</h3>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <div id="sheet-status" style="font-size:13px;color:var(--dim)">확인 중...</div>
-        <button onclick="location.reload()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;padding:9px 18px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">🔄 새로고침</button>
+      <button onclick="loadFromSheet()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;padding:9px 18px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">🔄 새로고침</button>
       </div>
       <div class="csv-guide" style="margin-top:14px">
         <div style="color:var(--accent2);font-weight:500;margin-bottom:4px">▸ 구글 시트 컬럼 순서 (A~R열)</div>
