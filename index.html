@@ -276,7 +276,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
 
 // ══════════════════════════════════════════
 const SHEET_CSV_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-j7irdQSuwF9CF_iQwkqJetOb0SOWGQA8DVt-VIV1-xwyGV2Tl5SdOwHLBt-79RJBOidxsABJoe1A/pub?output=csv';
-const NOTICE_CSV_URL = 'Yhttps://docs.google.com/spreadsheets/d/e/2PACX-1vT-j7irdQSuwF9CF_iQwkqJetOb0SOWGQA8DVt-VIV1-xwyGV2Tl5SdOwHLBt-79RJBOidxsABJoe1A/pub?gid=1558845890&single=true&output=csv';
+const NOTICE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-j7irdQSuwF9CF_iQwkqJetOb0SOWGQA8DVt-VIV1-xwyGV2Tl5SdOwHLBt-79RJBOidxsABJoe1A/pub?gid=1558845890&single=true&output=csv';
 const ADMIN_CODE     = 'yy';
 const firebaseConfig = {
   apiKey:"YOUR_API_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",
@@ -385,11 +385,16 @@ const SAMPLE_DATA=[
 function parseCSV(text){
   return text.trim().split('\n').slice(1).map(line=>{
     const c=line.split(',').map(s=>s.trim());
-    return {branch:c[0],name:c[1],code:c[2],month:c[3],
-      target:+c[4],actual:+c[5],newLms:+c[6],actHappy:+c[7],
-      design:+c[8],issued:+c[9],okCount:+c[10],okAmount:+c[11],
-      품격Count:+c[12],품격Amount:+c[13],
-      dbProvide:+c[14],dbLms:+c[15],happyAnalysis:+c[16],dbDesign:+c[17]};
+    return {
+      branch:c[0], name:c[1], code:c[2], month:c[3],
+      target:+c[4], actual:+c[5],
+      newLms:+c[6], actHappy:+c[7],
+      design:+c[8], issued:+c[9],
+      okCount:+c[10], okAmount:+c[11],
+      품격Count:+c[12], 품격Amount:+c[13],
+      dbProvide:+c[14], dbLms:+c[15],
+      happyAnalysis:+c[16], dbDesign:+c[17]
+    };
   }).filter(r=>r.name);
 }
 
@@ -755,9 +760,10 @@ function renderAdmin(panel){
       </div>
       <div class="csv-guide" style="margin-top:14px">
         <div style="color:var(--accent2);font-weight:500;margin-bottom:4px">▸ 구글 시트 컬럼 순서 (A~R열)</div>
-        지점명, 이름, 코드, 차월, 기준목표, 실적진도, 신규LMS동의, 행복보장분석, 설계건수, 발행건수,<br>
-        오케이판매건수, 오케이판매금액, 품격판매건수, 품격판매금액,<br>
-        DB제공건수, DB LMS동의, DB행복보장분석, DB가입설계건수<br>
+        지점명(A), 이름(B), 코드(C), 차월(D), 기준목표(E), 실적진도(F),<br>
+        신규LMS동의(G), 행복보장분석(H), 설계건수(I), 발행건수(J),<br>
+        오케이판매건수(K), 오케이판매금액(L), 품격판매건수(M), 품격판매금액(N),<br>
+        제공건수(O), DB LMS동의(P), DB행복보장분석(Q), 가입설계건수(R)<br>
         <span style="color:var(--muted)">※ 금액은 원 단위 숫자로 입력</span>
       </div>
     </div>
