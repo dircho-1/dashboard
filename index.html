@@ -524,8 +524,8 @@ function buildTabs(){
   const nav=document.getElementById('tab-nav');
   const panels=document.getElementById('main-panels');
   nav.innerHTML=''; panels.innerHTML='';
-  const tabs=[{l:'📊 진도 현황'},{l:'📋 활동 현황'},{l:'🗂️ 제공DB활동'},{l:'🙌 오케이플랜+인생의품격'},{l:'📢 공지사항'},{l:'🌟 오늘의 실적'}];
-  if(currentSession.role==='admin')tabs.push({l:'⚙️ 관리자'});  tabs.forEach((t,i)=>{
+  const tabs=[{l:'📊 진도 현황'},{l:'📋 활동 현황'},{l:'🗂️ 제공DB활동'},{l:'🙌 오케이플랜+인생의품격'},{l:'📢 공지사항'},{l:'🌟 오늘의 실적'},{l:'🏆 시상진도 보기'}];
+  if(currentSession.role==='admin')tabs.push({l:'⚙️ 관리자'});
     const btn=document.createElement('button');
     btn.className='tab-btn'+(i===0?' active':'');
     btn.textContent=t.l;
@@ -582,7 +582,8 @@ function renderAll(){
   const p3=document.getElementById('panel-3');if(p3)render품격(p3);
   const p4=document.getElementById('panel-4');if(p4)renderNoticePanel(p4);
   const p5=document.getElementById('panel-5');if(p5)renderToday(p5);
-  const p6=document.getElementById('panel-6');if(p6)renderAdmin(p6);
+  const p6=document.getElementById('panel-6');if(p6)renderAward(p6);
+  const p7=document.getElementById('panel-7');if(p7)renderAdmin(p7);
 }
 
 function updateStats(){
@@ -803,6 +804,256 @@ function renderToday(panel){
   }
   panel.querySelector('#ft-today').textContent=`${improved.length}명 실적 증가 · 총 +${wonFmt(totalIncrease)}`;
 }
+
+// ── 내 시상진도 보기
+function renderAward(panel){
+  const me=DATA.find(r=>r.code===currentSession?.code);
+  if(!me){
+    // 관리자: 인원 선택해서 볼 수 있게
+    if(currentSession?.role==='admin'){
+      panel.innerHTML=`
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.07em;color:var(--muted);margin-bottom:12px">👤 조회할 인원 선택</div>
+          <select id="award-select" onchange="renderAwardFor(this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Noto Sans KR',sans-serif;font-size:14px;color:var(--text);outline:none;">
+            <option value="">— 인원을 선택하세요 —</option>
+            ${[...DATA].sort((a,b)=>b.actual-a.actual).map(m=>`<option value="${m.code}">${m.name} (${m.branch}) — 실적 ${wonFmt(m.actual)}</option>`).join('')}
+          </select>
+        </div>
+        <div id="award-content"></div>`;
+      return;
+    }
+    panel.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted)">데이터를 불러오는 중...</div>';
+    return;
+  }
+
+  const s=me.actual-me.target;
+  const r=getRate(me);
+  const sc=s>=0?'#10b981':'#ef4444';
+  const rc=r>=200?'#ef4444':r>=150?'#fbbf24':r>=100?'#10b981':'#ef4444';
+
+  // D-Day
+  const deadline=new Date('2026-06-19');
+  const dday=Math.max(0,Math.ceil((deadline-new Date())/(1000*60*60*24)));
+  const dc=dday<=3?'#ef4444':dday<=7?'#f59e0b':'#fbbf24';
+
+  // 순증 시상 구간
+  const STEPS=[
+    {min:1000000,label:'100만원↑',prize:'1,000천원',val:1000000,next:null},
+    {min:500000, label:'50만원↑', prize:'500천원',  val:500000, next:1000000},
+    {min:300000, label:'30만원↑', prize:'300천원',  val:300000, next:500000},
+    {min:200000, label:'20만원↑', prize:'200천원',  val:200000, next:300000},
+    {min:100000, label:'10만원↑', prize:'100천원',  val:100000, next:200000},
+  ];
+  const YU=[
+    {min:1000000,label:'주유권 60만원',val:600000},
+    {min:500000, label:'주유권 30만원',val:300000},
+    {min:300000, label:'주유권 15만원',val:150000},
+    {min:200000, label:'주유권 10만원',val:100000},
+    {min:100000, label:'주유권 4만원', val:40000},
+  ];
+  const GOB=[
+    {pct:300,label:'세곱빼기 300%',val:me.target},
+    {pct:200,label:'곱빼기 200%',  val:Math.round(me.target*.5)},
+    {pct:150,label:'150% 달성',   val:Math.round(me.target*.3)},
+  ];
+  const RANK_PRIZES=[
+    {rank:'1위', label:'300천원',    val:300000,color:'#fbbf24'},
+    {rank:'2위', label:'200천원',    val:200000,color:'#94a3b8'},
+    {rank:'3위', label:'100천원',    val:100000,color:'#fb923c'},
+    {rank:'4위', label:'올리브영 8만',val:80000, color:'#84cc16'},
+    {rank:'5위', label:'올리브영 8만',val:80000, color:'#84cc16'},
+    {rank:'6위', label:'올리브영 5만',val:50000, color:'#64748b'},
+    {rank:'7위', label:'올리브영 5만',val:50000, color:'#64748b'},
+    {rank:'8위', label:'올리브영 5만',val:50000, color:'#64748b'},
+    {rank:'9위', label:'올리브영 5만',val:50000, color:'#64748b'},
+    {rank:'10위',label:'올리브영 5만',val:50000, color:'#64748b'},
+  ];
+
+  const qualified=[...DATA].filter(d=>d.actual-d.target>=200000).sort((a,b)=>(b.actual-b.target)-(a.actual-a.target));
+  qualified.forEach((m,i)=>{m._rk=i<RANK_PRIZES.length?RANK_PRIZES[i]:null;});
+  DATA.forEach(m=>{if(!m._rk&&getRate(m)>=100&&m.actual-m.target<200000)m._rk={rank:'순위外',label:'올리브영 3만',val:30000,color:'#10b981'};});
+
+  const curStep=STEPS.find(st=>s>=st.min)||null;
+  const yuGift=YU.find(y=>s>=y.min)||null;
+  const myQIdx=qualified.findIndex(m=>m.code===me.code);
+
+  // 시상금 합산
+  const spv=curStep?curStep.val:0;
+  const yuv=yuGift?yuGift.val:0;
+  const over40=me.actual>=400000;
+  let gbv=0;
+  if(r>=100&&over40){if(r>=300)gbv=me.target;else if(r>=200)gbv=Math.round(me.target*.5);else if(r>=150)gbv=Math.round(me.target*.3);}
+  const rkv=me._rk?me._rk.val:0;
+  const total=spv+yuv+gbv+rkv;
+
+  const W=n=>`<span style="font-family:'DM Mono',monospace">${wonFmt(n)}</span>`;
+  const TAG=(t,c,bg)=>`<span style="display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;background:${bg};color:${c};white-space:nowrap">${t}</span>`;
+  const HINT=(left,right,color='#06b6d4')=>`<div style="background:var(--surface2);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--dim);display:flex;align-items:center;justify-content:space-between;margin-top:6px;flex-wrap:wrap;gap:4px;"><span>${left}</span><span style="font-family:'DM Mono',monospace;font-weight:700;color:${color}">+${wonFmt(right)} 필요</span></div>`;
+  const CARD=(label,val,color)=>`<div style="background:var(--surface2);border-radius:10px;padding:11px 12px;"><div style="font-size:10px;color:var(--muted);margin-bottom:4px">${label}</div><div style="font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:${val>0?color:'var(--muted)'};">${val>0?wonFmt(val):'—'}</div></div>`;
+  const BAR=(pct,grad)=>`<div style="height:7px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;margin:5px 0;"><div style="height:100%;width:${Math.min(pct,100)}%;background:${grad};border-radius:99px;"></div></div>`;
+
+  // 요약 HTML
+  const summaryHtml=
+    `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">
+      ${CARD('기준목표',me.target,'#94a3b8')}
+      ${CARD('현재 실적',me.actual,'#06b6d4')}
+      <div style="background:var(--surface2);border-radius:10px;padding:11px 12px;"><div style="font-size:10px;color:var(--muted);margin-bottom:4px">순증액</div><div style="font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:${sc}">${s>=0?'+':''}${wonFmt(s)}</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:4px">달성율 <b style="color:${rc}">${r}%</b></div>
+    ${BAR(Math.min(r,100),r>=100?'linear-gradient(90deg,#10b981,#34d399)':r>=70?'linear-gradient(90deg,#f59e0b,#fbbf24)':'linear-gradient(90deg,#ef4444,#f87171)')}`;
+
+  // 순증 시상 HTML
+  let spHtml='';
+  if(s<100000){
+    spHtml=`${TAG('순증 10만원 미달','#94a3b8','rgba(100,116,139,.12)')}
+      ${HINT('10만원 순증 시상까지',100000-s)}
+      ${HINT('20만원 순위시상 조건까지',200000-s)}`;
+  } else {
+    const barNext=curStep.next||curStep.min*2;
+    const pct=Math.round((s-curStep.min)/(barNext-curStep.min)*100);
+    spHtml=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+        <span style="font-size:13px;font-weight:700">현재 구간</span>
+        ${TAG(curStep.label+' — '+curStep.prize,'#fbbf24','rgba(251,191,36,.12)')}
+      </div>
+      <div style="font-size:11px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:3px"><span>현재 ${wonFmt(s)}</span><span>${curStep.next?'다음 '+wonFmt(curStep.next):'최고 구간!'}</span></div>
+      ${BAR(pct,'linear-gradient(90deg,#f59e0b,#fbbf24)')}
+      ${curStep.next?HINT('다음 구간까지',curStep.next-s,'#fbbf24'):'<div style="font-size:12px;color:#fbbf24;margin-top:6px">🎉 최고 시상 구간 달성!</div>'}
+      ${yuGift?`<div style="margin-top:8px;padding:9px 13px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);border-radius:8px;font-size:12px;color:#fbbf24">⏰ 6월 19일 조기마감 달성 시 <b>${yuGift.label}</b> 추가</div>`:''}`;
+  }
+
+  // 곱빼기 시상 HTML
+  let gobHtml='';
+  if(r<100){
+    gobHtml=`<div style="font-size:12px;color:var(--muted)">기준 달성(100%) 후 해당됩니다.</div>${HINT('기준 달성까지',me.target-me.actual)}`;
+  } else {
+    if(!over40) gobHtml+=`<div style="padding:9px 13px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:12px;color:#fbbf24;margin-bottom:10px">⚠️ 곱빼기 시상은 최종 실적 40만원↑ 조건 — 현재 ${wonFmt(me.actual)} (${wonFmt(400000-me.actual)} 더 필요)</div>`;
+    GOB.forEach(g=>{
+      const need=Math.round(me.target*g.pct/100);
+      const done=me.actual>=need;
+      const pct2=Math.min(Math.round(me.actual/need*100),100);
+      gobHtml+=`<div style="background:var(--surface2);border:1px solid ${done?'rgba(16,185,129,.3)':'var(--border)'};border-radius:10px;padding:12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+          <span style="font-size:12px;font-weight:700;color:${done?'#10b981':'var(--dim)'}">${done?'✅ ':'⬜ '}${g.label}</span>
+          <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;background:${done?'rgba(16,185,129,.15)':'rgba(167,139,250,.12)'};color:${done?'#10b981':'#a78bfa'}">추가 시상 ${wonFmt(g.val)}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">필요 실적 ${wonFmt(need)} ${done?'<span style="color:#10b981">✓ 달성!</span>':'<span style="color:#06b6d4">— +'+wonFmt(need-me.actual)+' 필요</span>'}</div>
+        ${BAR(pct2,done?'linear-gradient(90deg,#10b981,#34d399)':'linear-gradient(90deg,#3b82f6,#06b6d4)')}
+      </div>`;
+    });
+  }
+
+  // 순위 시상 HTML
+  let rkHtml='';
+  if(s<200000){
+    rkHtml=`<div style="padding:9px 13px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:12px;color:#fbbf24;margin-bottom:10px">순위 시상 조건: 순증 20만원↑ — <b>${wonFmt(200000-s)} 더 필요</b></div>`;
+  } else {
+    const myRk=me._rk;
+    rkHtml+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px">
+      <span style="font-size:13px;font-weight:700">현재 순위</span>
+      ${TAG((myQIdx+1)+'위 — '+(myRk?myRk.label:'—'),myRk?myRk.color:'#64748b',`rgba(0,0,0,.2)`)}
+    </div>`;
+  }
+  rkHtml+=`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">순증 20만원↑ 달성자 순위표</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
+        <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--muted)">순위</th>
+        <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--muted)">이름</th>
+        <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--muted)">순증액</th>
+        <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--muted)">순위 시상</th>
+      </tr></thead><tbody>`;
+  qualified.forEach((m,i)=>{
+    const isMe=m.code===me.code;
+    const rk=RANK_PRIZES[i]||{label:'—',color:'#64748b'};
+    const bc=i===0?'rgba(251,191,36,.25)':i===1?'rgba(148,163,184,.2)':i===2?'rgba(251,146,60,.2)':i<=4?'rgba(132,204,22,.2)':'rgba(100,116,139,.12)';
+    rkHtml+=`<tr style="${isMe?'background:rgba(139,92,246,.08);border-left:3px solid #a78bfa;':''}border-bottom:0.5px solid rgba(45,58,82,.5)">
+      <td style="padding:9px 10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:900;background:${bc};color:${rk.color}">${i+1}</span></td>
+      <td style="padding:9px 10px;font-weight:${isMe?700:400}">${m.name}${isMe?' <span style="font-size:10px;color:#a78bfa">◀ 나</span>':''}</td>
+      <td style="padding:9px 10px;font-family:\'DM Mono\',monospace;color:#10b981">+${wonFmt(m.actual-m.target)}</td>
+      <td style="padding:9px 10px"><span style="font-size:11px;font-weight:700;color:${isMe?'#a78bfa':rk.color}">${rk.label}</span></td>
+    </tr>`;
+  });
+  // 순위外
+  DATA.filter(m=>getRate(m)>=100&&m.actual-m.target>=0&&m.actual-m.target<200000).forEach(m=>{
+    const isMe=m.code===me.code;
+    rkHtml+=`<tr style="${isMe?'background:rgba(139,92,246,.08);border-left:3px solid #a78bfa;':''}border-bottom:0.5px solid rgba(45,58,82,.5);opacity:.75">
+      <td style="padding:8px 10px"><span style="font-size:10px;background:rgba(16,185,129,.15);color:#10b981;padding:2px 6px;border-radius:5px">外</span></td>
+      <td style="padding:8px 10px;font-size:12px;font-weight:${isMe?700:400}">${m.name}${isMe?' <span style="font-size:10px;color:#a78bfa">◀ 나</span>':''}</td>
+      <td style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:12px;color:var(--dim)">+${wonFmt(m.actual-m.target)}</td>
+      <td style="padding:8px 10px;font-size:11px;color:#10b981">올리브영 3만</td>
+    </tr>`;
+  });
+  rkHtml+=`</tbody></table>`;
+
+  // 합계 HTML
+  const sumHtml=`
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
+      ${CARD('순증 시상',spv,'#fbbf24')}
+      ${CARD('주유권 (조기마감)',yuv,'#fbbf24')}
+      ${CARD('곱빼기 시상',gbv,'#a78bfa')}
+      ${CARD('순위 시상',rkv,me._rk?me._rk.color:'#64748b')}
+    </div>
+    <div style="background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(6,182,212,.07));border:1px solid rgba(16,185,129,.2);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:13px;font-weight:700">🎁 예상 시상 합계</span>
+      <span style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:#10b981">${wonFmt(total)}</span>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.9">
+      ※ 주유권은 6월 19일 조기마감 달성 시 추가 지급<br>
+      ※ 곱빼기 시상은 최종 실적 40만원↑ 조건<br>
+      ※ 순위 시상은 최종 확정 후 지급
+    </div>`;
+
+  // D-Day 배너
+  const ddayBanner=`<div style="background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(239,68,68,.07));border:1px solid rgba(245,158,11,.22);border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">⏰ 조기마감 (6월 19일) — 주유권 추가 지급 기한</div>
+      <div style="display:flex;align-items:baseline;gap:6px">
+        <span style="font-family:'DM Mono',monospace;font-size:26px;font-weight:900;color:${dc}">D-${dday}</span>
+        <span style="font-size:13px;color:var(--muted)">일 남음</span>
+      </div>
+    </div>
+    <div style="text-align:right;font-size:12px;color:#fbbf24">10만원↑ 주유권 4만원<br>100만원↑ 주유권 60만원</div>
+  </div>`;
+
+  const cardStyle='background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;';
+  const secTitle=(t,sub)=>`<div style="font-size:11px;font-weight:700;letter-spacing:.07em;color:var(--muted);margin-bottom:12px">${t}${sub?` <span style="font-weight:400;color:var(--muted)">${sub}</span>`:''}</div>`;
+
+  panel.innerHTML=`
+    ${ddayBanner}
+    <div style="${cardStyle}">
+      ${secTitle('📊 나의 실적 현황')}
+      ${summaryHtml}
+    </div>
+    <div style="${cardStyle}">
+      ${secTitle('🏆 인보험 월납 순증 시상')}
+      ${spHtml}
+    </div>
+    <div style="${cardStyle}">
+      ${secTitle('💎 곱빼기 시상','(최종 실적 40만원↑ 조건)')}
+      ${gobHtml}
+    </div>
+    <div style="${cardStyle}">
+      ${secTitle('🥇 순증 순위 시상','(순증 20만원↑ 달성자 중)')}
+      ${rkHtml}
+    </div>
+    <div style="${cardStyle}">
+      ${secTitle('🎁 예상 시상금 합계')}
+      ${sumHtml}
+    </div>`;
+}
+
+window.renderAwardFor=(code)=>{
+  const content=document.getElementById('award-content');
+  if(!content||!code)return;
+  const m=DATA.find(d=>d.code===code);
+  if(!m){content.innerHTML='';return;}
+  // 임시로 세션 코드를 바꿔서 렌더 후 복원
+  const origCode=currentSession.code;
+  currentSession.code=code;
+  const tempPanel=document.createElement('div');
+  renderAward(tempPanel);
+  content.innerHTML=tempPanel.innerHTML;
+  currentSession.code=origCode;
+};
 
 // ── 공지사항
 function renderNoticePanel(panel){
