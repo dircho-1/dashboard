@@ -903,45 +903,59 @@ function renderAward(panel){
     <div style="font-size:11px;color:var(--muted);margin-bottom:4px">달성율 <b style="color:${rc}">${r}%</b></div>
     ${BAR(Math.min(r,100),r>=100?'linear-gradient(90deg,#10b981,#34d399)':r>=70?'linear-gradient(90deg,#f59e0b,#fbbf24)':'linear-gradient(90deg,#ef4444,#f87171)')}`;
 
-  // 순증 시상 HTML
+  // 순증 시상 HTML - 전체 구간 표시
   let spHtml='';
-  if(s<100000){
-    spHtml=`${TAG('순증 10만원 미달','#94a3b8','rgba(100,116,139,.12)')}
-      ${HINT('10만원 순증 시상까지',100000-s)}
-      ${HINT('20만원 순위시상 조건까지',200000-s)}`;
+  // 현재 달성 구간 표시
+  if(curStep){
+    spHtml+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+      <span style="font-size:13px;font-weight:700">현재 구간</span>
+      ${TAG(curStep.label+' — '+curStep.prize,'#fbbf24','rgba(251,191,36,.15)')}
+    </div>`;
   } else {
-    const barNext=curStep.next||curStep.min*2;
-    const pct=Math.round((s-curStep.min)/(barNext-curStep.min)*100);
-    spHtml=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
-        <span style="font-size:13px;font-weight:700">현재 구간</span>
-        ${TAG(curStep.label+' — '+curStep.prize,'#fbbf24','rgba(251,191,36,.12)')}
+    spHtml+=`<div style="margin-bottom:10px">${TAG('순증 10만원 미달','#94a3b8','rgba(100,116,139,.12)')}</div>`;
+  }
+  // 전체 구간 목록
+  const SP_ALL=[
+    {need:100000, label:'10만원↑', prize:'100천원',    yu:'주유권 4만원'},
+    {need:200000, label:'20만원↑', prize:'200천원',    yu:'주유권 10만원'},
+    {need:300000, label:'30만원↑', prize:'300천원',    yu:'주유권 15만원'},
+    {need:500000, label:'50만원↑', prize:'500천원',    yu:'주유권 30만원'},
+    {need:1000000,label:'100만원↑',prize:'1,000천원',  yu:'주유권 60만원'},
+  ];
+  SP_ALL.forEach(g=>{
+    const done=s>=g.need;
+    const diff=g.need-s;
+    spHtml+=`<div style="background:var(--surface2);border:1px solid ${done?'rgba(16,185,129,.3)':'var(--border)'};border-radius:10px;padding:10px 13px;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+      <div>
+        <span style="font-size:12px;font-weight:700;color:${done?'#10b981':'var(--dim)'}">${done?'✅ ':'⬜ '}${g.label} — ${g.prize}</span>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">조기마감 시 ${g.yu} 추가</div>
       </div>
-      <div style="font-size:11px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:3px"><span>현재 ${wonFmt(s)}</span><span>${curStep.next?'다음 '+wonFmt(curStep.next):'최고 구간!'}</span></div>
-      ${BAR(pct,'linear-gradient(90deg,#f59e0b,#fbbf24)')}
-      ${curStep.next?HINT('다음 구간까지',curStep.next-s,'#fbbf24'):'<div style="font-size:12px;color:#fbbf24;margin-top:6px">🎉 최고 시상 구간 달성!</div>'}
-      ${yuGift?`<div style="margin-top:8px;padding:9px 13px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);border-radius:8px;font-size:12px;color:#fbbf24">⏰ 6월 19일 조기마감 달성 시 <b>${yuGift.label}</b> 추가</div>`:''}`;
+      <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:${done?'#10b981':'#06b6d4'}">${done?'달성!':'+'+wonFmt(diff)+' 필요'}</span>
+    </div>`;
+  });
+  if(yuGift){
+    spHtml+=`<div style="margin-top:6px;padding:9px 13px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);border-radius:8px;font-size:12px;color:#fbbf24">⏰ 6월 19일 조기마감 달성 시 현재 <b>${yuGift.label}</b> 적용 중</div>`;
   }
 
-  // 곱빼기 시상 HTML
+  // 곱빼기 시상 HTML - 전체 구간 표시
   let gobHtml='';
-  if(r<100){
-    gobHtml=`<div style="font-size:12px;color:var(--muted)">기준 달성(100%) 후 해당됩니다.</div>${HINT('기준 달성까지',me.target-me.actual)}`;
-  } else {
-    if(!over40) gobHtml+=`<div style="padding:9px 13px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:12px;color:#fbbf24;margin-bottom:10px">⚠️ 곱빼기 시상은 최종 실적 40만원↑ 조건 — 현재 ${wonFmt(me.actual)} (${wonFmt(400000-me.actual)} 더 필요)</div>`;
-    GOB.forEach(g=>{
-      const need=Math.round(me.target*g.pct/100);
-      const done=me.actual>=need;
-      const pct2=Math.min(Math.round(me.actual/need*100),100);
-      gobHtml+=`<div style="background:var(--surface2);border:1px solid ${done?'rgba(16,185,129,.3)':'var(--border)'};border-radius:10px;padding:12px;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px">
-          <span style="font-size:12px;font-weight:700;color:${done?'#10b981':'var(--dim)'}">${done?'✅ ':'⬜ '}${g.label}</span>
-          <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;background:${done?'rgba(16,185,129,.15)':'rgba(167,139,250,.12)'};color:${done?'#10b981':'#a78bfa'}">추가 시상 ${wonFmt(g.val)}</span>
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">필요 실적 ${wonFmt(need)} ${done?'<span style="color:#10b981">✓ 달성!</span>':'<span style="color:#06b6d4">— +'+wonFmt(need-me.actual)+' 필요</span>'}</div>
-        ${BAR(pct2,done?'linear-gradient(90deg,#10b981,#34d399)':'linear-gradient(90deg,#3b82f6,#06b6d4)')}
-      </div>`;
-    });
+  if(!over40){
+    gobHtml+=`<div style="padding:9px 13px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:12px;color:#fbbf24;margin-bottom:10px">⚠️ 곱빼기 시상 조건: 최종 실적 40만원↑ — 현재 ${wonFmt(me.actual)} (+${wonFmt(400000-me.actual)} 필요)</div>`;
   }
+  GOB.forEach(g=>{
+    const need=Math.round(me.target*g.pct/100);
+    const done=me.actual>=need;
+    const diff=need-me.actual;
+    const pct2=Math.min(Math.round(me.actual/need*100),100);
+    gobHtml+=`<div style="background:var(--surface2);border:1px solid ${done?'rgba(16,185,129,.3)':'var(--border)'};border-radius:10px;padding:12px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+        <span style="font-size:12px;font-weight:700;color:${done?'#10b981':'var(--dim)'}">${done?'✅ ':'⬜ '}${g.label}</span>
+        <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;background:${done?'rgba(16,185,129,.15)':'rgba(167,139,250,.12)'};color:${done?'#10b981':'#a78bfa'}">추가 시상 ${wonFmt(g.val)}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">필요 실적 ${wonFmt(need)} — <span style="color:${done?'#10b981':'#06b6d4'};font-weight:700">${done?'✓ 달성!':'+'+wonFmt(diff)+' 필요'}</span></div>
+      ${BAR(pct2,done?'linear-gradient(90deg,#10b981,#34d399)':'linear-gradient(90deg,#3b82f6,#06b6d4)')}
+    </div>`;
+  });
 
   // 순위 시상 HTML
   let rkHtml='';
