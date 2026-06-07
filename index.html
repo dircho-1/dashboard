@@ -411,17 +411,17 @@ function parseNoticeCSV(text){
 async function loadFromSheet(){
   const st=document.getElementById('sheet-status');
   if(st){st.textContent='불러오는 중...';st.style.color='var(--dim)';}
-  if(SHEET_CSV_URL==='YOUR_SHEET_URL'){ DATA=SAMPLE_DATA; renderAll(); if(st){st.textContent='⚠️ 샘플 데이터 표시 중';st.style.color='var(--gold2)';} return; }
   try{
     const res=await fetch(SHEET_CSV_URL);
     DATA=parseCSV(await res.text());
-    renderAll();
+    // 로그인 후에만 렌더
+    if(currentSession) renderAll();
     const now=new Date().toLocaleTimeString('ko-KR');
-    // renderAll 후 다시 찾아서 업데이트
     const st2=document.getElementById('sheet-status');
     if(st2){st2.textContent=`✅ ${DATA.length}명 · ${now}`;st2.style.color='var(--green)';}
   }catch(e){
-    DATA=SAMPLE_DATA; renderAll();
+    DATA=SAMPLE_DATA;
+    if(currentSession) renderAll();
     const st2=document.getElementById('sheet-status');
     if(st2){st2.textContent='❌ 불러오기 실패 — 샘플 표시';st2.style.color='var(--red)';}
   }
@@ -514,6 +514,7 @@ function enterApp(){
   document.getElementById('screen-app').classList.add('active');
   document.getElementById('header-name').textContent=currentSession.name;
   document.getElementById('header-role').textContent=currentSession.role==='admin'?'ADMIN':currentSession.role==='observer'?'OBSERVER':'MEMBER';
+  if(!DATA.length) DATA=SAMPLE_DATA;
   buildTabs();
   renderAll();
   showKPI();
@@ -525,6 +526,7 @@ function buildTabs(){
   nav.innerHTML=''; panels.innerHTML='';
   const tabs=[{l:'📊 진도 현황'},{l:'📋 활동 현황'},{l:'🗂️ 제공DB활동'},{l:'🙌 오케이플랜+인생의품격'},{l:'📢 공지사항'},{l:'🌟 오늘의 실적'},{l:'🏆 시상진도 보기'}];
   if(currentSession.role==='admin')tabs.push({l:'⚙️ 관리자'});
+  tabs.forEach((t,i)=>{
     const btn=document.createElement('button');
     btn.className='tab-btn'+(i===0?' active':'');
     btn.textContent=t.l;
