@@ -515,9 +515,9 @@ function enterApp(){
   document.getElementById('header-name').textContent=currentSession.name;
   document.getElementById('header-role').textContent=currentSession.role==='admin'?'ADMIN':currentSession.role==='observer'?'OBSERVER':'MEMBER';
   if(!DATA.length) DATA=SAMPLE_DATA;
-  buildTabs();
-  renderAll();
-  showKPI();
+  try{ buildTabs(); }catch(e){ console.error('buildTabs error:',e); }
+  try{ renderAll(); }catch(e){ console.error('renderAll error:',e); }
+  try{ showKPI(); }catch(e){ console.error('showKPI error:',e); }
 }
 
 function buildTabs(){
@@ -576,15 +576,15 @@ function showKPI(){
 
 // ── RENDER ALL
 function renderAll(){
-  updateStats();
-  const p=document.getElementById('panel-0'); if(p)renderProgress(p);
-  const p1=document.getElementById('panel-1');if(p1)renderActivity(p1);
-  const p2=document.getElementById('panel-2');if(p2)renderDB(p2);
-  const p3=document.getElementById('panel-3');if(p3)render품격(p3);
-  const p4=document.getElementById('panel-4');if(p4)renderNoticePanel(p4);
-  const p5=document.getElementById('panel-5');if(p5)renderToday(p5);
-  const p6=document.getElementById('panel-6');if(p6)renderAward(p6);
-  const p7=document.getElementById('panel-7');if(p7)renderAdmin(p7);
+  try{updateStats();}catch(e){console.error('updateStats:',e);}
+  try{const p=document.getElementById('panel-0');if(p)renderProgress(p);}catch(e){console.error('renderProgress:',e);}
+  try{const p1=document.getElementById('panel-1');if(p1)renderActivity(p1);}catch(e){console.error('renderActivity:',e);}
+  try{const p2=document.getElementById('panel-2');if(p2)renderDB(p2);}catch(e){console.error('renderDB:',e);}
+  try{const p3=document.getElementById('panel-3');if(p3)render품격(p3);}catch(e){console.error('render품격:',e);}
+  try{const p4=document.getElementById('panel-4');if(p4)renderNoticePanel(p4);}catch(e){console.error('renderNotice:',e);}
+  try{const p5=document.getElementById('panel-5');if(p5)renderToday(p5);}catch(e){console.error('renderToday:',e);}
+  try{const p6=document.getElementById('panel-6');if(p6)renderAward(p6);}catch(e){console.error('renderAward:',e);}
+  try{if(currentSession?.role==='admin'){const p7=document.getElementById('panel-7');if(p7)renderAdmin(p7);}}catch(e){console.error('renderAdmin:',e);}
 }
 
 function updateStats(){
