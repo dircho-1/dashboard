@@ -1090,31 +1090,74 @@ function renderAward(panel){
 window.openAward=(code)=>{
   const targetCode=code||currentSession?.code;
   const me=DATA.find(d=>d.code===targetCode);
-  const screen=document.getElementById('screen-award');
-  const nameEl=document.getElementById('award-person-name');
-  const content=document.getElementById('award-main-content');
-  if(nameEl) nameEl.textContent=me?`${me.name} · ${me.branch}`:'인원 선택';
-  // 관리자면 선택 UI, 설계사면 바로 렌더
+
+  // 시상진도 HTML 생성
+  let awardHtml='';
   if(currentSession.role==='admin'&&!code){
-    content.innerHTML=`
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px">👤 조회할 인원 선택</div>
-        <select onchange="openAward(this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Noto Sans KR',sans-serif;font-size:14px;color:var(--text);outline:none;">
-          <option value="">— 인원을 선택하세요 —</option>
-          ${[...DATA].sort((a,b)=>b.actual-a.actual).map(m=>`<option value="${m.code}">${m.name} (${m.branch}) — 실적 ${wonFmt(m.actual)} / ${getRate(m)}%</option>`).join('')}
+    // 관리자: 선택 화면
+    const options=[...DATA].sort((a,b)=>b.actual-a.actual)
+      .map(m=>`<option value="${m.code}">${m.name} (${m.branch}) — 실적 ${wonFmt(m.actual)} / ${getRate(m)}%</option>`).join('');
+    awardHtml=`<div style="padding:20px;">
+      <div style="background:#131929;border:1px solid #232f4b;border-radius:14px;padding:16px;">
+        <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:10px">👤 조회할 인원 선택</div>
+        <select id="aw-sel" style="width:100%;background:#1b2338;border:1px solid #232f4b;border-radius:8px;padding:10px 12px;font-size:14px;color:#e2e8f0;outline:none;">
+          <option value="">— 인원을 선택하세요 —</option>${options}
         </select>
-      </div>`;
+      </div>
+      <div id="aw-content" style="margin-top:12px;"></div>
+    </div>`;
   } else {
-    // 임시 세션 코드로 renderAward 실행
     const origCode=currentSession.code;
     if(targetCode) currentSession.code=targetCode;
     const tempPanel=document.createElement('div');
     try{ renderAward(tempPanel); }catch(e){ console.error(e); }
-    content.innerHTML=tempPanel.innerHTML;
+    awardHtml=`<div style="padding:16px;">${tempPanel.innerHTML}</div>`;
     currentSession.code=origCode;
   }
-  screen.classList.add('active');
-  document.getElementById('award-scroll').scrollTop=0;
+
+  const personName=me?`${me.name} · ${me.branch}`:'시상진도 보기';
+
+  // 새 창 열기
+  const newWin=window.open('','_blank','width=420,height=800,scrollbars=yes,resizable=yes');
+  newWin.document.write(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>🏆 ${personName}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0b0f1a;--surface:#131929;--surface2:#1b2338;--border:#2d3a52;--text:#e2e8f0;--muted:#64748b;--dim:#94a3b8;--gold:#fbbf24;--green:#10b981;--blue:#06b6d4;--red:#f87171;--purple:#a78bfa;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(59,130,246,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.04) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;}
+.top-bar{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;}
+.back-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--dim);cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+.back-btn:hover{border-color:var(--blue);color:var(--blue);}
+.top-title{font-size:14px;font-weight:700;color:var(--text);}
+.top-sub{font-size:11px;color:var(--gold);margin-top:1px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <button class="back-btn" onclick="window.close()">✕ 닫기</button>
+  <div>
+    <div class="top-title">🏆 내 시상진도 보기</div>
+    <div class="top-sub">${personName}</div>
+  </div>
+</div>
+${awardHtml}
+${currentSession.role==='admin'&&!code?`<script>
+document.getElementById('aw-sel').addEventListener('change',function(){
+  if(!this.value)return;
+  window.opener.openAward(this.value);
+  window.close();
+});
+<\/script>`:''}
+</body>
+</html>`);
+  newWin.document.close();
 };
 
 window.closeAward=()=>{
